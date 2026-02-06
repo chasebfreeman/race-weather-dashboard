@@ -239,7 +239,7 @@ export default function Home() {
         <Tile label="Humidity (%)" value={data ? fmt(data.display.humidityPct, 0) : "—"} />
         <Tile label="Abs Press (inHg)" value={data ? fmt(data.display.absPressureInHg, 3) : "—"} />
         <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />
-        <Tile label="ADR" value={data ? fmt(data.display.adr) : "—"} />
+        <Tile label="ADR" value={data ? fmt(data.display.adr, 2) : "—"} />
 
         <Tile label="Correction" value={data ? fmt(data.display.correction, 4) : "—"} />
         <Tile label="Grains" value={data ? fmt(data.display.humidityGrains, 1) : "—"} />
@@ -343,7 +343,9 @@ export default function Home() {
                       else if (c.key === "humidityGrains") out = fmt(value, 1);
                       else if (c.key === "densityAltFt") out = fmt(value, 0);
                       else if (c.key === "correction") out = fmt(value, 4);
+                      else if (c.key === "adr") out = fmt(value, 2);
                       else out = fmt(value);
+
 
                       return (
                         <td
