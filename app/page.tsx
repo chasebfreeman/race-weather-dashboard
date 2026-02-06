@@ -236,7 +236,7 @@ export default function Home() {
       {/* ---- Tiles ---- */}
       <section style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 12 }}>
         <Tile label="Temp (F)" value={data ? fmt(data.display.tempF, 1) : "—"} />
-        <Tile label="Humidity (%)" value={data ? fmt(data.display.humidityPct, 0) : "—"} />
+        <Tile label="Humidity (%)" value={data ? fmt(data.display.humidityPct, 2) : "—"} />
         <Tile label="Abs Press (inHg)" value={data ? fmt(data.display.absPressureInHg, 3) : "—"} />
         <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />
         <Tile label="ADR" value={data ? fmt(data.display.adr, 2) : "—"} />
@@ -336,7 +336,7 @@ export default function Home() {
                       let out = "—";
                       if (c.key === "ts") out = fmt(value);
                       else if (c.key === "tempF") out = fmt(value, 1);
-                      else if (c.key === "humidityPct") out = fmt(value, 0);
+                      else if (c.key === "humidityPct") out = fmt(value, 2);
                       else if (c.key === "absPressureInHg") out = fmt(value, 3);
                       else if (c.key === "vaporPressureInHg") out = fmt(value, 4);
                       else if (c.key === "dewPointF") out = fmt(value, 1);
