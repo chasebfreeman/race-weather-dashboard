@@ -236,8 +236,8 @@ export default function Home() {
       {/* ---- Tiles ---- */}
       <section style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 12 }}>
         <Tile label="Temp (F)" value={data ? fmt(data.display.tempF, 1) : "—"} />
-        <Tile label="Humidity (%)" value={data ? fmt(data.display.humidityPct, 2) : "—"} />
         <Tile label="ADR" value={data ? fmt(data.display.adr, 2) : "—"} />
+        <Tile label="Humidity (%)" value={data ? fmt(data.display.humidityPct, 2) : "—"} />  
         <Tile label="Abs Press (inHg)" value={data ? fmt(data.display.absPressureInHg, 3) : "—"} />
         <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />
         <Tile label="Correction" value={data ? fmt(data.display.correction, 4) : "—"} />
