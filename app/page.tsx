@@ -75,20 +75,23 @@ function formatAge(seconds: number): string {
   const s = Math.round(seconds % 60);
   return `${m}m ${s}s`;
 }
+
 function formatTs12Hour(ts: string | null | undefined): string {
   if (!ts) return "—";
 
   const d = new Date(ts);
   if (isNaN(d.getTime())) return ts; // fallback if parsing fails
 
-  return d.toLocaleTimeString(undefined, {
+  return d.toLocaleString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "numeric",
     minute: "2-digit",
     second: "2-digit",
     hour12: true,
   });
 }
-
 export default function Home() {
   const [data, setData] = useState<ApiResult | null>(null);
   const [history, setHistory] = useState<ApiResult[]>([]);
