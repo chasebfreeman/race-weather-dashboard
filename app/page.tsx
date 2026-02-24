@@ -60,10 +60,9 @@ function saveHistoryToStorage(history: ApiResult[]) {
 }
 
 /* =========================
-   Time helpers for staleness
+   Time helpers for staleness + display
 ========================= */
 function parseTsToMs(ts: string): number | null {
-  // If ts is ISO, Date.parse works. If it isn't, we'll fail safely.
   const ms = Date.parse(ts);
   return Number.isFinite(ms) ? ms : null;
 }
@@ -80,7 +79,7 @@ function formatTs12Hour(ts: string | null | undefined): string {
   if (!ts) return "—";
 
   const d = new Date(ts);
-  if (isNaN(d.getTime())) return ts; // fallback if parsing fails
+  if (isNaN(d.getTime())) return ts;
 
   return d.toLocaleString(undefined, {
     year: "numeric",
@@ -92,6 +91,36 @@ function formatTs12Hour(ts: string | null | undefined): string {
     hour12: true,
   });
 }
+
+/* =========================
+   CSV export helpers
+========================= */
+function toYMDLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function csvEscape(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const s = String(value);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadTextFile(filename: string, text: string) {
+  const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export default function Home() {
   const [data, setData] = useState<ApiResult | null>(null);
   const [history, setHistory] = useState<ApiResult[]>([]);
@@ -206,9 +235,41 @@ export default function Home() {
     return { bg, border, fg, text };
   })();
 
+  function exportTodayCsv() {
+    const todayYMD = toYMDLocal(new Date());
+
+    const todays = history.filter((r) => {
+      const ms = Date.parse(r.display.ts);
+      if (!Number.isFinite(ms)) return false;
+      return toYMDLocal(new Date(ms)) === todayYMD;
+    });
+
+    if (todays.length === 0) {
+      alert("No readings for today yet.");
+      return;
+    }
+
+    const keys = columns.map((c) => c.key);
+    const header = keys.map(csvEscape).join(",");
+    const lines = todays.map((r) =>
+      keys.map((k) => csvEscape((r.display as any)[k])).join(",")
+    );
+
+    const csv = [header, ...lines].join("\n");
+    downloadTextFile(`EliteTrackWeather_${todayYMD}.csv`, csv);
+  }
+
   return (
     <main style={{ padding: 16, fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
         <h1 style={{ marginBottom: 12 }}>Race Weather</h1>
 
         {/* Stale indicator */}
@@ -229,7 +290,8 @@ export default function Home() {
         >
           <strong>{staleBadge.text}</strong>
           <span style={{ opacity: 0.85 }}>
-            Last: {lastTs ?? "—"} · Age: {Number.isFinite(ageSec) ? formatAge(ageSec) : "—"}
+            Last: {lastTs ?? "—"} · Age:{" "}
+            {Number.isFinite(ageSec) ? formatAge(ageSec) : "—"}
           </span>
         </div>
       </div>
@@ -250,31 +312,78 @@ export default function Home() {
       )}
 
       {/* ---- Tiles ---- */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 12 }}>
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+          gap: 12,
+        }}
+      >
         <Tile label="Temp (F)" value={data ? fmt(data.display.tempF, 1) : "—"} />
         <Tile label="ADR" value={data ? fmt(data.display.adr, 2) : "—"} />
-        <Tile label="Humidity (%)" value={data ? fmt(data.display.humidityPct, 2) : "—"} />  
-        <Tile label="Vapor P (inHg)" value={data ? fmt(data.display.vaporPressureInHg, 4) : "—"} />
+        <Tile
+          label="Humidity (%)"
+          value={data ? fmt(data.display.humidityPct, 2) : "—"}
+        />
+        <Tile
+          label="Vapor P (inHg)"
+          value={data ? fmt(data.display.vaporPressureInHg, 4) : "—"}
+        />
         <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />
-        <Tile label="Correction" value={data ? fmt(data.display.correction, 4) : "—"} />
-       
-        
+        <Tile
+          label="Correction"
+          value={data ? fmt(data.display.correction, 4) : "—"}
+        />
 
-        
-        <Tile label="Grains" value={data ? fmt(data.display.humidityGrains, 1) : "—"} />
-        <Tile label="Abs Press (inHg)" value={data ? fmt(data.display.absPressureInHg, 3) : "—"} />
-        <Tile label="Dew Pt (F)" value={data ? fmt(data.display.dewPointF, 1) : "—"} />
-        
-        <Tile label="Timestamp" value={data ? formatTs12Hour(data.display.ts) : "—"} />
+        <Tile
+          label="Grains"
+          value={data ? fmt(data.display.humidityGrains, 1) : "—"}
+        />
+        <Tile
+          label="Abs Press (inHg)"
+          value={data ? fmt(data.display.absPressureInHg, 3) : "—"}
+        />
+        <Tile
+          label="Dew Pt (F)"
+          value={data ? fmt(data.display.dewPointF, 1) : "—"}
+        />
+        <Tile
+          label="Timestamp"
+          value={data ? formatTs12Hour(data.display.ts) : "—"}
+        />
       </section>
 
       {/* ---- History table ---- */}
       <section style={{ marginTop: 20 }}>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
           <h2 style={{ margin: 0 }}>Previous readings</h2>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ opacity: 0.7, fontSize: 13 }}>{history.length} stored</div>
+            <div style={{ opacity: 0.7, fontSize: 13 }}>
+              {history.length} stored
+            </div>
+
+            <button
+              onClick={exportTodayCsv}
+              style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 8,
+                padding: "6px 10px",
+                background: "white",
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              Export Today CSV
+            </button>
 
             <button
               onClick={() => {
@@ -303,7 +412,13 @@ export default function Home() {
             overflow: "auto",
           }}
         >
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 980 }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              minWidth: 980,
+            }}
+          >
             <thead>
               <tr>
                 {columns.map((c) => (
@@ -320,7 +435,6 @@ export default function Home() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {/* Friendly label for your pinned ones */}
                     {c.key === "ts"
                       ? "Date & Time Stamp"
                       : c.key === "tempF"
@@ -342,13 +456,19 @@ export default function Home() {
             <tbody>
               {history.length === 0 ? (
                 <tr>
-                  <td colSpan={Math.max(columns.length, 1)} style={{ padding: 12, opacity: 0.7 }}>
+                  <td
+                    colSpan={Math.max(columns.length, 1)}
+                    style={{ padding: 12, opacity: 0.7 }}
+                  >
                     No readings yet.
                   </td>
                 </tr>
               ) : (
                 history.map((r, idx) => (
-                  <tr key={`${r.display.ts}-${idx}`} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  <tr
+                    key={`${r.display.ts}-${idx}`}
+                    style={{ borderBottom: "1px solid #f3f4f6" }}
+                  >
                     {columns.map((c) => {
                       const key = c.key as keyof ApiResult["display"];
                       const value = r.display?.[key];
@@ -365,7 +485,6 @@ export default function Home() {
                       else if (c.key === "correction") out = fmt(value, 4);
                       else if (c.key === "adr") out = fmt(value, 2);
                       else out = fmt(value);
-
 
                       return (
                         <td
@@ -401,7 +520,9 @@ function Tile({ label, value }: { label: string; value: string }) {
       }}
     >
       <div style={{ fontSize: 12, opacity: 0.7 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 650, marginTop: 6 }}>{value}</div>
+      <div style={{ fontSize: 20, fontWeight: 650, marginTop: 6 }}>
+        {value}
+      </div>
     </div>
   );
 }
