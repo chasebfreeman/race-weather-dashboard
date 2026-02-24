@@ -75,6 +75,19 @@ function formatAge(seconds: number): string {
   const s = Math.round(seconds % 60);
   return `${m}m ${s}s`;
 }
+function formatTs12Hour(ts: string | null | undefined): string {
+  if (!ts) return "—";
+
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return ts; // fallback if parsing fails
+
+  return d.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+}
 
 export default function Home() {
   const [data, setData] = useState<ApiResult | null>(null);
@@ -249,7 +262,7 @@ export default function Home() {
         <Tile label="Abs Press (inHg)" value={data ? fmt(data.display.absPressureInHg, 3) : "—"} />
         <Tile label="Dew Pt (F)" value={data ? fmt(data.display.dewPointF, 1) : "—"} />
         
-        <Tile label="Timestamp" value={data ? data.display.ts : "—"} />
+        <Tile label="Timestamp" value={data ? formatTs12Hour(data.display.ts) : "—"} />
       </section>
 
       {/* ---- History table ---- */}
@@ -338,7 +351,7 @@ export default function Home() {
                       const value = r.display?.[key];
 
                       let out = "—";
-                      if (c.key === "ts") out = fmt(value);
+                      if (c.key === "ts") out = formatTs12Hour(value as string);
                       else if (c.key === "tempF") out = fmt(value, 1);
                       else if (c.key === "humidityPct") out = fmt(value, 2);
                       else if (c.key === "absPressureInHg") out = fmt(value, 3);
