@@ -329,19 +329,20 @@ export default function Home() {
           value={data ? fmt(data.display.humidityPct, 2) : "—"}
         />
         <Tile
-          label="Vapor P (inHg)"
-          value={data ? fmt(data.display.vaporPressureInHg, 4) : "—"}
+          label="Grains"
+          value={data ? fmt(data.display.humidityGrains, 1) : "—"}
+        />
+        
         />
         <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />
         <Tile
           label="Correction"
           value={data ? fmt(data.display.correction, 4) : "—"}
         />
-
         <Tile
-          label="Grains"
-          value={data ? fmt(data.display.humidityGrains, 1) : "—"}
-        />
+          label="Vapor P (inHg)"
+          value={data ? fmt(data.display.vaporPressureInHg, 4) : "—"}
+        
         <Tile
           label="Abs Press (inHg)"
           value={data ? fmt(data.display.absPressureInHg, 3) : "—"}
