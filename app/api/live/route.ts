@@ -14,10 +14,7 @@ async function fetchWeatherLinkCurrent() {
 
   const url = `https://api.weatherlink.com/v2/current/${stationId}?api-key=${apiKey}`;
   const res = await fetch(url, {
-    headers: {
-      "X-Api-Secret": apiSecret,
-    },
-    // keep it fresh while developing
+    headers: { "X-Api-Secret": apiSecret },
     cache: "no-store",
   });
 
@@ -30,7 +27,50 @@ async function fetchWeatherLinkCurrent() {
 }
 
 /**
- * Extract tempF, humidityPct, absPressureInHg from WeatherLink v2 payload.
+ * Scan all sensors/data records and return the first finite numeric value
+ * for the requested field key (e.g. "uv_index").
+ */
+function firstNumberFromSensors(payload: any, field: string): number | null {
+  const sensors: any[] = payload?.sensors ?? [];
+  for (const s of sensors) {
+    const dataArr: any[] = s?.data ?? [];
+    for (const rec of dataArr) {
+      const v = rec?.[field];
+      const n = typeof v === "number" ? v : Number(v);
+      if (Number.isFinite(n)) return n;
+    }
+  }
+  return null;
+}
+
+/**
+ * Try to pull a "best" timestamp from WeatherLink payload (if present),
+ * falling back to server time.
+ *
+ * WeatherLink commonly includes a unix timestamp like "ts" in records.
+ */
+function extractBestTimestampIso(payload: any): string {
+  const sensors: any[] = payload?.sensors ?? [];
+
+  let bestMs: number | null = null;
+
+  for (const s of sensors) {
+    for (const rec of s?.data ?? []) {
+      // WeatherLink often uses unix seconds in "ts"
+      const ts = rec?.ts;
+      const n = typeof ts === "number" ? ts : Number(ts);
+      if (Number.isFinite(n) && n > 0) {
+        const ms = n < 10_000_000_000 ? n * 1000 : n; // seconds vs ms safeguard
+        if (bestMs === null || ms > bestMs) bestMs = ms;
+      }
+    }
+  }
+
+  return bestMs ? new Date(bestMs).toISOString() : new Date().toISOString();
+}
+
+/**
+ * Extract tempF, humidityPct, absPressureInHg (+ uvIndex) from WeatherLink v2 payload.
  * Different stations expose pressure differently (bar_absolute or abs_press).
  * We search all "conditions" records for known keys.
  */
@@ -69,14 +109,14 @@ function extractInputs(payload: any) {
   }
 
   if (absPressureInHg === null) {
-    throw new Error(
-      "Could not find absolute pressure (bar_absolute/abs_press missing)."
-    );
+    throw new Error("Could not find absolute pressure (bar_absolute/abs_press missing).");
   }
 
-  return { tempF, humidityPct, absPressureInHg };
-}
+  // 3) UV index (optional; will be null if no UV sensor or not reporting)
+  const uvIndex = firstNumberFromSensors(payload, "uv_index");
 
+  return { tempF, humidityPct, absPressureInHg, uvIndex };
+}
 
 function roundTo(value: number, decimals: number) {
   const p = Math.pow(10, decimals);
@@ -88,11 +128,16 @@ export async function GET() {
     const payload = await fetchWeatherLinkCurrent();
     const inputs = extractInputs(payload);
 
-    const raw = computeRacingWeather(inputs);
+    // Racing math stays the same (uses temp/hum/absPressure)
+    const raw = computeRacingWeather({
+      tempF: inputs.tempF,
+      humidityPct: inputs.humidityPct,
+      absPressureInHg: inputs.absPressureInHg,
+    });
 
-    // return EXACTLY the rounding you requested
     const display = {
-      ts: new Date().toISOString(),
+      // Better: use WeatherLink timestamp so your stale indicator reflects sensor freshness
+      ts: extractBestTimestampIso(payload),
 
       tempF: raw.tempF,
       humidityPct: raw.humidityPct,
@@ -102,17 +147,18 @@ export async function GET() {
       dewPointF: roundTo(raw.dewPointF, 1),
       humidityGrains: roundTo(raw.humidityGrains, 1),
 
+      // Keep your ADR/correction formatting decisions as-is (client now formats ADR to 2 decimals)
       adr: roundTo(raw.adrPct, 1),
       densityAltFt: Math.round(raw.densityAltFt),
 
       correction: Number(roundTo(raw.correction, 4).toFixed(4)),
+
+      // ✅ NEW
+      uvIndex: inputs.uvIndex,
     };
 
     return NextResponse.json({ inputs, display });
   } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message ?? "Unknown error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err?.message ?? "Unknown error" }, { status: 500 });
   }
 }

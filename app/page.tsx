@@ -21,7 +21,7 @@ type ApiResult = {
 
     adr: number;
     densityAltFt: number;
-
+    uvIndex: number | null;
     correction: number;
   };
 };
@@ -189,6 +189,7 @@ export default function Home() {
       "adr",
       "humidityGrains",
       "vaporPressureInHg",
+      "uvIndex",
     ];
 
     const remaining = Object.keys(sample)
@@ -330,6 +331,7 @@ export default function Home() {
         <Tile label="Correction" value={data ? fmt(data.display.correction, 4) : "—"} />
         <Tile label="Vapor P (inHg)" value={data ? fmt(data.display.vaporPressureInHg, 4) : "—"} />
         <Tile label="Abs Press (inHg)" value={data ? fmt(data.display.absPressureInHg, 3) : "—"} />
+        <Tile label="UV Index" value={data ? fmt(data.display.uvIndex, 1) : "—"} />
         <Tile  label="Dew Pt (F)" value={data ? fmt(data.display.dewPointF, 1) : "—"} />
         <Tile label="Timestamp" value={data ? formatTs12Hour(data.display.ts) : "—"} />
       </section>
