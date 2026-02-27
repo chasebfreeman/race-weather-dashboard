@@ -334,6 +334,7 @@ export default function Home() {
         <Tile label="UV Index" value={data ? fmt(data.display.uvIndex, 1) : "—"} />
         <Tile  label="Dew Pt (F)" value={data ? fmt(data.display.dewPointF, 1) : "—"} />
         <Tile label="Timestamp" value={data ? formatTs12Hour(data.display.ts) : "—"} />
+
       </section>
 
       {/* ---- History table ---- */}
