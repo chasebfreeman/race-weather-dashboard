@@ -87,7 +87,7 @@ function formatTs12Hour(ts: string | null | undefined): string {
     day: "2-digit",
     hour: "numeric",
     minute: "2-digit",
-    second: "2-digit",
+
     hour12: true,
   });
 }
