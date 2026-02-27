@@ -185,7 +185,10 @@ export default function Home() {
       "humidityPct",
       "absPressureInHg",
       "correction",
+      "densityAltFt",
       "adr",
+      "humidityGrains",
+      "vaporPressureInHg",
     ];
 
     const remaining = Object.keys(sample)
