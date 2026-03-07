@@ -137,7 +137,7 @@ export async function GET() {
 
     const display = {
       // Better: use WeatherLink timestamp so your stale indicator reflects sensor freshness
-      ts: extractBestTimestampIso(payload),
+      ts: new Date().toISOString(),
 
       tempF: raw.tempF,
       humidityPct: raw.humidityPct,
