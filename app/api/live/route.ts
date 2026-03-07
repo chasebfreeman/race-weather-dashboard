@@ -151,11 +151,11 @@ export async function GET() {
       adr: roundTo(raw.adrPct, 2),
       densityAltFt: Math.round(raw.densityAltFt),
 
-      correction: Number(roundTo(raw.correction, 5).toFixed(4)),
+      correction: Number(roundTo(raw.correction, 5).toFixed(5)),
 
       // ✅ NEW
       uvIndex: inputs.uvIndex,
-      adr2: Number(roundTo(raw.adr2, 5).toFixed(4)),
+      adr2: Number(roundTo(raw.adr2, 5).toFixed(5)),
     };
 
     return NextResponse.json({ inputs, display });
