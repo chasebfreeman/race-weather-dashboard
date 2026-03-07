@@ -188,9 +188,9 @@ export default function Home() {
       "correction",
       "densityAltFt",
       "adr",
-      "adr2",
       "humidityGrains",
       "vaporPressureInHg",
+      "adr2",
       "uvIndex",
     ];
 
