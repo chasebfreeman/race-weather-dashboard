@@ -148,14 +148,14 @@ export async function GET() {
       humidityGrains: roundTo(raw.humidityGrains, 1),
 
       // Keep your ADR/correction formatting decisions as-is (client now formats ADR to 2 decimals)
-      adr: roundTo(raw.adrPct, 1),
+      adr: roundTo(raw.adrPct, 2),
       densityAltFt: Math.round(raw.densityAltFt),
 
-      correction: Number(roundTo(raw.correction, 4).toFixed(4)),
+      correction: Number(roundTo(raw.correction, 5).toFixed(4)),
 
       // ✅ NEW
       uvIndex: inputs.uvIndex,
-      adr2: Number(roundTo(raw.adr2, 4).toFixed(4)),
+      adr2: Number(roundTo(raw.adr2, 5).toFixed(4)),
     };
 
     return NextResponse.json({ inputs, display });
