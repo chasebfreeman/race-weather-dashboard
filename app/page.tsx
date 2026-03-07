@@ -20,6 +20,7 @@ type ApiResult = {
     humidityGrains: number;
 
     adr: number;
+    adr2: number;
     densityAltFt: number;
     uvIndex: number | null;
     correction: number;
@@ -187,6 +188,7 @@ export default function Home() {
       "correction",
       "densityAltFt",
       "adr",
+      "adr2",
       "humidityGrains",
       "vaporPressureInHg",
       "uvIndex",
@@ -325,6 +327,7 @@ export default function Home() {
       >
         <Tile label="Temp (F)" value={data ? fmt(data.display.tempF, 1) : "—"} />
         <Tile label="ADR" value={data ? fmt(data.display.adr, 2) : "—"} />
+        <Tile label="ADR2" value={data ? fmt(data.display.adr2, 4) : "—"} />
         <Tile label="Humidity (%)" value={data ? fmt(data.display.humidityPct, 2) : "—"} />
         <Tile label="Grains" value={data ? fmt(data.display.humidityGrains, 1) : "—"} />
         <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />
@@ -467,6 +470,7 @@ export default function Home() {
                       else if (c.key === "densityAltFt") out = fmt(value, 0);
                       else if (c.key === "correction") out = fmt(value, 4);
                       else if (c.key === "adr") out = fmt(value, 2);
+                      else if (c.key === "adr2") out = fmt(value, 4);
                       else out = fmt(value);
 
                       return (

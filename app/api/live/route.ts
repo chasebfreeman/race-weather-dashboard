@@ -155,6 +155,7 @@ export async function GET() {
 
       // ✅ NEW
       uvIndex: inputs.uvIndex,
+      adr2: Number(roundTo(raw.adr2, 4).toFixed(4)),
     };
 
     return NextResponse.json({ inputs, display });

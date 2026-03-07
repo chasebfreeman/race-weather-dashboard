@@ -26,6 +26,10 @@ export type RawOutput = {
   hf: number;
   bf: number;
   correction: number;
+
+  adrCorr: number;
+  adrCalc: number;
+  adr2: number;
 };
 
 // --- PD polynomial (from your Excel) ---
@@ -119,6 +123,16 @@ export function computeRacingWeather(x: Inputs): RawOutput {
     vaporPressureInHg
   );
 
+  // ==========================================
+  // ADR2 math from your Excel
+  // adrCorr = (((100 - adr) / 100) + 1)
+  // adrCalc = adrCorr - correction
+  // adr2    = adrCorr - (adrCalc / 2)
+  // ==========================================
+  const adrCorr = ((100 - adrPct) / 100) + 1;
+  const adrCalc = adrCorr - correction;
+  const adr2 = adrCorr - (adrCalc / 2);
+
   return {
     tempF,
     humidityPct,
@@ -137,5 +151,9 @@ export function computeRacingWeather(x: Inputs): RawOutput {
     hf,
     bf,
     correction,
+
+    adrCorr,
+    adrCalc,
+    adr2,
   };
 }
