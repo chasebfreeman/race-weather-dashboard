@@ -331,8 +331,8 @@ export default function Home() {
         <Tile label="ADR2" value={data ? fmt(data.display.adr2, 5) : "—"} />
         <Tile  label="Dew Pt (F)" value={data ? fmt(data.display.dewPointF, 1) : "—"} />
         <Tile label="Grains" value={data ? fmt(data.display.humidityGrains, 1) : "—"} />
-        <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />
         <Tile label="Humidity (%)" value={data ? fmt(data.display.humidityPct, 1) : "—"} />
+        <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />    
         <Tile label="Correction" value={data ? fmt(data.display.correction, 5) : "—"} />
         <Tile label="Vapor P (inHg)" value={data ? fmt(data.display.vaporPressureInHg, 4) : "—"} />        
         <Tile label="UV Index" value={data ? fmt(data.display.uvIndex, 1) : "—"} />
