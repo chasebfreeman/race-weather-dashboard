@@ -337,7 +337,7 @@ export default function Home() {
         <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />                
         <Tile label="UV Index" value={data ? fmt(data.display.uvIndex, 1) : "—"} />
         <Tile label="Abs Press (inHg)" value={data ? fmt(data.display.absPressureInHg, 3) : "—"} />
-        <Tile label="ADR2 Correction" value={data ? fmt(data.display.adr2, 5) : "—"} />
+        <Tile label="ADR2 Correction" value={data ? fmt(data.display.adr2, ) : "—"} />
 
       </section>
 
