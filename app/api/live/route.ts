@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { computeRacingWeather } from "@/lib/weatherCalc";
 
+const BAROMETER_OFFSET_INHG = -0.02;
+
 // WeatherLink v2 current endpoint:
 // https://api.weatherlink.com/v2/current/{station-id}?api-key=...
 async function fetchWeatherLinkCurrent() {
@@ -115,7 +117,12 @@ function extractInputs(payload: any) {
   // 3) UV index (optional; will be null if no UV sensor or not reporting)
   const uvIndex = firstNumberFromSensors(payload, "uv_index");
 
-  return { tempF, humidityPct, absPressureInHg, uvIndex };
+  // Calibrate pressure once, before calculating and logging the reading.
+  const correctedPressure = Number(
+    (absPressureInHg + BAROMETER_OFFSET_INHG).toFixed(10)
+  );
+
+  return { tempF, humidityPct, absPressureInHg: correctedPressure, uvIndex };
 }
 
 function roundTo(value: number, decimals: number) {
