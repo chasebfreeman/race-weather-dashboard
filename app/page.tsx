@@ -28,6 +28,11 @@ type ApiResult = {
   };
 };
 
+type LoggedReading = {
+  timestamp: string;
+  fields: { key: string; label: string; value: string }[];
+};
+
 const WEATHER_FIELDS = {
   tempF: { label: "Temperature (°F)", decimals: 1 },
   humidityPct: { label: "Humidity (%)", decimals: 2 },
@@ -49,6 +54,16 @@ function formatReadingValue(key: string, value: unknown) {
   if (key === "ts") return formatTs12Hour(value as string);
   const field = WEATHER_FIELDS[key as keyof typeof WEATHER_FIELDS];
   return fmt(value, field?.decimals);
+}
+
+function historyColumnLabel(key: string) {
+  if (key === "ts") return "Date & Time Stamp";
+  if (key === "tempF") return "Temp";
+  if (key === "humidityPct") return "Humidity";
+  if (key === "absPressureInHg") return "Pressure";
+  if (key === "correction") return "Correction Factor";
+  if (key === "adr") return "ADR";
+  return key;
 }
 
 function fmt(value: unknown, decimals?: number) {
@@ -150,7 +165,7 @@ export default function Home() {
   const [data, setData] = useState<ApiResult | null>(null);
   const [history, setHistory] = useState<ApiResult[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [selectedReading, setSelectedReading] = useState<ApiResult | null>(null);
+  const [selectedReading, setSelectedReading] = useState<LoggedReading | null>(null);
 
   // for staleness ticking (updates the badge every second)
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
@@ -223,8 +238,24 @@ export default function Home() {
       .filter((k) => !pinnedOrder.includes(k as any))
       .sort();
 
-    return [...pinnedOrder, ...remaining].map((k) => ({ key: k, label: k }));
+    return [...pinnedOrder, ...remaining].map((key) => ({
+      key,
+      label: historyColumnLabel(key),
+    }));
   }, [data, history]);
+
+  function openLoggedReading(reading: ApiResult) {
+    setSelectedReading({
+      timestamp: reading.display.ts,
+      fields: columns.map((column) => ({
+        ...column,
+        value: formatReadingValue(
+          column.key,
+          reading.display[column.key as keyof ApiResult["display"]]
+        ),
+      })),
+    });
+  }
 
   /* =========================
      Stale indicator
@@ -447,19 +478,7 @@ export default function Home() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {c.key === "ts"
-                      ? "Date & Time Stamp"
-                      : c.key === "tempF"
-                      ? "Temp"
-                      : c.key === "humidityPct"
-                      ? "Humidity"
-                      : c.key === "absPressureInHg"
-                      ? "Pressure"
-                      : c.key === "correction"
-                      ? "Correction Factor"
-                      : c.key === "adr"
-                      ? "ADR"
-                      : c.label}
+                    {c.label}
                   </th>
                 ))}
               </tr>
@@ -501,7 +520,7 @@ export default function Home() {
                               className="reading-time-button"
                               aria-haspopup="dialog"
                               aria-label={`View weather for ${out}`}
-                              onClick={() => setSelectedReading(r)}
+                              onClick={() => openLoggedReading(r)}
                             >
                               {out}
                             </button>
@@ -533,7 +552,7 @@ function WeatherReadingDialog({
   reading,
   onClose,
 }: {
-  reading: ApiResult;
+  reading: LoggedReading;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -564,8 +583,8 @@ function WeatherReadingDialog({
     >
       <header className="weather-reading-header">
         <div>
-          <h2 id="weather-reading-title">Weather reading</h2>
-          <p id="weather-reading-time">{formatTs12Hour(reading.display.ts)}</p>
+          <h2 id="weather-reading-title">Logged weather</h2>
+          <p id="weather-reading-time">{formatTs12Hour(reading.timestamp)}</p>
         </div>
         <form method="dialog">
           <button type="submit" className="weather-reading-close">
@@ -574,27 +593,22 @@ function WeatherReadingDialog({
         </form>
       </header>
 
-      <dl className="weather-reading-grid">
-        {Object.entries(WEATHER_FIELDS).map(([key, field]) => (
-          <div className="weather-reading-value" key={key}>
-            <dt>{field.label}</dt>
-            <dd>
-              {formatReadingValue(
-                key,
-                reading.display[key as keyof ApiResult["display"]]
-              )}
-            </dd>
-          </div>
-        ))}
-        {Object.entries(reading.display)
-          .filter(([key]) => key !== "ts" && !(key in WEATHER_FIELDS))
-          .map(([key, value]) => (
-            <div className="weather-reading-value" key={key}>
-              <dt>{key}</dt>
-              <dd>{fmt(value)}</dd>
-            </div>
+      <table className="weather-reading-table">
+        <thead>
+          <tr>
+            <th scope="col">Field</th>
+            <th scope="col">Recorded value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {reading.fields.map((field) => (
+            <tr key={field.key}>
+              <th scope="row">{field.label}</th>
+              <td>{field.value}</td>
+            </tr>
           ))}
-      </dl>
+        </tbody>
+      </table>
     </dialog>
   );
 }

@@ -93,37 +93,50 @@ body {
   cursor: pointer;
 }
 
-.weather-reading-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
-}
-
-.weather-reading-value {
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
+.weather-reading-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
   overflow-wrap: anywhere;
 }
 
-.weather-reading-value dt {
-  font-size: 13px;
+.weather-reading-table th,
+.weather-reading-table td {
+  padding: 10px 0;
+  border-bottom: 1px solid #d1d5db;
+  vertical-align: top;
+}
+
+.weather-reading-table th {
+  padding-right: 16px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.weather-reading-table thead th {
+  font-size: 12px;
   opacity: 0.75;
 }
 
-.weather-reading-value dd {
-  margin: 6px 0 0;
-  font-size: 22px;
+.weather-reading-table td {
+  text-align: right;
+  font-size: 18px;
   font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.weather-reading-table thead th:last-child {
+  padding-right: 0;
+  text-align: right;
+}
+
+.weather-reading-table tbody tr:last-child > * {
+  border-bottom: 0;
 }
 
 @media (max-width: 480px) {
   .weather-reading-dialog {
     padding: 16px;
-  }
-
-  .weather-reading-grid {
-    grid-template-columns: 1fr;
   }
 }
