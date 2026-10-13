@@ -332,7 +332,7 @@ export default function Home() {
         <Tile label="Dew Pt (F)" value={data ? fmt(data.display.dewPointF, 1) : "—"} />
         <Tile label="Timestamp" value={data ? formatTs12Hour(data.display.ts) : "—"} /> 
         <Tile label="Humidity (%)" value={data ? fmt(data.display.humidityPct, 1) : "—"} />
-        <Tile label="ADR" value={data ? fmt(data.display.adr, 2) : "—"} />
+        <Tile label="ADR" value={data ? fmt(data.display.adr, 1) : "—"} />
         <Tile label="Grains" value={data ? fmt(data.display.humidityGrains, 1) : "—"} />
         <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />                
         <Tile label="UV Index" value={data ? fmt(data.display.uvIndex, 1) : "—"} />
@@ -471,7 +471,7 @@ export default function Home() {
                       else if (c.key === "humidityGrains") out = fmt(value, 1);
                       else if (c.key === "densityAltFt") out = fmt(value, 0);
                       else if (c.key === "correction") out = fmt(value, 4);
-                      else if (c.key === "adr") out = fmt(value, 2);
+                      else if (c.key === "adr") out = fmt(value, 1);
                       else if (c.key === "adr2") out = fmt(value, 4);
                       else out = fmt(value);
 
