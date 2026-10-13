@@ -1,7 +1,7 @@
 //page
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type ApiResult = {
   inputs: {
@@ -27,6 +27,29 @@ type ApiResult = {
     correction: number;
   };
 };
+
+const WEATHER_FIELDS = {
+  tempF: { label: "Temperature (°F)", decimals: 1 },
+  humidityPct: { label: "Humidity (%)", decimals: 2 },
+  absPressureInHg: { label: "Absolute pressure (inHg)", decimals: 3 },
+  correction: { label: "Correction factor", decimals: 4 },
+  densityAltFt: { label: "Density altitude (ft)", decimals: 0 },
+  adr: { label: "ADR (%)", decimals: 2 },
+  humidityGrains: { label: "Humidity grains", decimals: 1 },
+  vaporPressureInHg: { label: "Vapor pressure (inHg)", decimals: 4 },
+  adr2: { label: "ADR2 correction", decimals: 4 },
+  uvIndex: { label: "UV index", decimals: undefined },
+  dewPointF: { label: "Dew point (°F)", decimals: 1 },
+} satisfies Record<
+  Exclude<keyof ApiResult["display"], "ts">,
+  { label: string; decimals: number | undefined }
+>;
+
+function formatReadingValue(key: string, value: unknown) {
+  if (key === "ts") return formatTs12Hour(value as string);
+  const field = WEATHER_FIELDS[key as keyof typeof WEATHER_FIELDS];
+  return fmt(value, field?.decimals);
+}
 
 function fmt(value: unknown, decimals?: number) {
   if (value === null || value === undefined) return "—";
@@ -127,6 +150,7 @@ export default function Home() {
   const [data, setData] = useState<ApiResult | null>(null);
   const [history, setHistory] = useState<ApiResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [selectedReading, setSelectedReading] = useState<ApiResult | null>(null);
 
   // for staleness ticking (updates the badge every second)
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
@@ -452,28 +476,16 @@ export default function Home() {
                   </td>
                 </tr>
               ) : (
-                history.map((r, idx) => (
+                history.map((r) => (
                   <tr
-                    key={`${r.display.ts}-${idx}`}
+                    key={r.display.ts}
                     style={{ borderBottom: "1px solid #f3f4f6" }}
                   >
                     {columns.map((c) => {
                       const key = c.key as keyof ApiResult["display"];
                       const value = r.display?.[key];
 
-                      let out = "—";
-                      if (c.key === "ts") out = formatTs12Hour(value as string);
-                      else if (c.key === "tempF") out = fmt(value, 1);
-                      else if (c.key === "humidityPct") out = fmt(value, 2);
-                      else if (c.key === "absPressureInHg") out = fmt(value, 3);
-                      else if (c.key === "vaporPressureInHg") out = fmt(value, 4);
-                      else if (c.key === "dewPointF") out = fmt(value, 1);
-                      else if (c.key === "humidityGrains") out = fmt(value, 1);
-                      else if (c.key === "densityAltFt") out = fmt(value, 0);
-                      else if (c.key === "correction") out = fmt(value, 4);
-                      else if (c.key === "adr") out = fmt(value, 2);
-                      else if (c.key === "adr2") out = fmt(value, 4);
-                      else out = fmt(value);
+                      const out = formatReadingValue(c.key, value);
 
                       return (
                         <td
@@ -483,7 +495,19 @@ export default function Home() {
                             whiteSpace: c.key === "ts" ? "nowrap" : "normal",
                           }}
                         >
-                          {out}
+                          {c.key === "ts" ? (
+                            <button
+                              type="button"
+                              className="reading-time-button"
+                              aria-haspopup="dialog"
+                              aria-label={`View weather for ${out}`}
+                              onClick={() => setSelectedReading(r)}
+                            >
+                              {out}
+                            </button>
+                          ) : (
+                            out
+                          )}
                         </td>
                       );
                     })}
@@ -494,7 +518,84 @@ export default function Home() {
           </table>
         </div>
       </section>
+
+      {selectedReading && (
+        <WeatherReadingDialog
+          reading={selectedReading}
+          onClose={() => setSelectedReading(null)}
+        />
+      )}
     </main>
+  );
+}
+
+function WeatherReadingDialog({
+  reading,
+  onClose,
+}: {
+  reading: ApiResult;
+  onClose: () => void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    dialogRef.current?.showModal();
+  }, []);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className="weather-reading-dialog"
+      aria-labelledby="weather-reading-title"
+      aria-describedby="weather-reading-time"
+      onClose={onClose}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const bounds = event.currentTarget.getBoundingClientRect();
+        if (
+          event.clientX < bounds.left ||
+          event.clientX > bounds.right ||
+          event.clientY < bounds.top ||
+          event.clientY > bounds.bottom
+        ) {
+          event.currentTarget.close();
+        }
+      }}
+    >
+      <header className="weather-reading-header">
+        <div>
+          <h2 id="weather-reading-title">Weather reading</h2>
+          <p id="weather-reading-time">{formatTs12Hour(reading.display.ts)}</p>
+        </div>
+        <form method="dialog">
+          <button type="submit" className="weather-reading-close">
+            Close
+          </button>
+        </form>
+      </header>
+
+      <dl className="weather-reading-grid">
+        {Object.entries(WEATHER_FIELDS).map(([key, field]) => (
+          <div className="weather-reading-value" key={key}>
+            <dt>{field.label}</dt>
+            <dd>
+              {formatReadingValue(
+                key,
+                reading.display[key as keyof ApiResult["display"]]
+              )}
+            </dd>
+          </div>
+        ))}
+        {Object.entries(reading.display)
+          .filter(([key]) => key !== "ts" && !(key in WEATHER_FIELDS))
+          .map(([key, value]) => (
+            <div className="weather-reading-value" key={key}>
+              <dt>{key}</dt>
+              <dd>{fmt(value)}</dd>
+            </div>
+          ))}
+      </dl>
+    </dialog>
   );
 }
 
