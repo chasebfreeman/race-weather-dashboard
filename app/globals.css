@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --table-header-background: #f3f4f6;
+  --table-header-foreground: #111827;
+  --table-header-border: #d1d5db;
 }
 
 @theme inline {
@@ -16,6 +19,9 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --table-header-background: #1f2937;
+    --table-header-foreground: #f9fafb;
+    --table-header-border: #4b5563;
   }
 }
 

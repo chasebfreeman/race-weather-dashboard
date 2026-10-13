@@ -417,10 +417,11 @@ export default function Home() {
             <button
               onClick={exportTodayCsv}
               style={{
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--table-header-border)",
                 borderRadius: 8,
                 padding: "6px 10px",
-                background: "white",
+                background: "var(--table-header-background)",
+                color: "var(--table-header-foreground)",
                 cursor: "pointer",
                 fontSize: 13,
               }}
@@ -434,10 +435,11 @@ export default function Home() {
                 localStorage.removeItem(HISTORY_KEY);
               }}
               style={{
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--table-header-border)",
                 borderRadius: 8,
                 padding: "6px 10px",
-                background: "white",
+                background: "var(--table-header-background)",
+                color: "var(--table-header-foreground)",
                 cursor: "pointer",
                 fontSize: 13,
               }}
@@ -467,14 +469,17 @@ export default function Home() {
                 {columns.map((c) => (
                   <th
                     key={c.key}
+                    scope="col"
                     style={{
                       position: "sticky",
                       top: 0,
-                      background: "white",
+                      background: "var(--table-header-background)",
+                      color: "var(--table-header-foreground)",
                       textAlign: "left",
-                      fontSize: 12,
+                      fontSize: 14,
+                      fontWeight: 700,
                       padding: "10px 12px",
-                      borderBottom: "1px solid #e5e7eb",
+                      borderBottom: "1px solid var(--table-header-border)",
                       whiteSpace: "nowrap",
                     }}
                   >
