@@ -109,9 +109,10 @@ function parseTsToMs(ts: string): number | null {
 
 function formatAge(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "—";
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  const m = Math.floor(seconds / 60);
-  const s = Math.round(seconds % 60);
+  const wholeSeconds = Math.floor(seconds);
+  if (wholeSeconds < 60) return `${wholeSeconds}s`;
+  const m = Math.floor(wholeSeconds / 60);
+  const s = wholeSeconds % 60;
   return `${m}m ${s}s`;
 }
 
@@ -167,7 +168,9 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [selectedReading, setSelectedReading] = useState<LoggedReading | null>(null);
 
-  // for staleness ticking (updates the badge every second)
+  // Use the local elapsed clock so server/device clock differences cannot age a fresh update.
+  const liveReceiptRef = useRef<{ timestamp: string; atMs: number } | null>(null);
+  const [liveAgeSec, setLiveAgeSec] = useState<number | null>(null);
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
 
   /* hydrate history on load */
@@ -178,7 +181,14 @@ export default function Home() {
 
   // tick every 1s so "age" updates live
   useEffect(() => {
-    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    const id = setInterval(() => {
+      const receipt = liveReceiptRef.current;
+      if (receipt) {
+        setLiveAgeSec(Math.max(0, (performance.now() - receipt.atMs) / 1000));
+      } else {
+        setNowMs(Date.now());
+      }
+    }, 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -193,6 +203,14 @@ export default function Home() {
       }
 
       const ok = json as ApiResult;
+      if (parseTsToMs(ok.display.ts) === null) {
+        throw new Error("Live weather has an invalid reading time.");
+      }
+
+      if (liveReceiptRef.current?.timestamp !== ok.display.ts) {
+        liveReceiptRef.current = { timestamp: ok.display.ts, atMs: performance.now() };
+        setLiveAgeSec(0);
+      }
       setData(ok);
 
       setHistory((prev) => {
@@ -262,7 +280,7 @@ export default function Home() {
   ========================= */
   const lastTs = data?.display?.ts ?? history[0]?.display?.ts ?? null;
   const lastMs = lastTs ? parseTsToMs(lastTs) : null;
-  const ageSec = lastMs ? (nowMs - lastMs) / 1000 : Infinity;
+  const ageSec = liveAgeSec ?? (lastMs ? (nowMs - lastMs) / 1000 : Infinity);
 
   const staleState = (() => {
     if (!lastTs || !Number.isFinite(ageSec)) return "OFFLINE" as const;
