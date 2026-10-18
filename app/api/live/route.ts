@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { computeRacingWeather } from "@/lib/weatherCalc";
 
-const BAROMETER_OFFSET_INHG = -0.02;
+const BAROMETER_OFFSET_INHG = -0.03;
 
 // WeatherLink v2 current endpoint:
 // https://api.weatherlink.com/v2/current/{station-id}?api-key=...
