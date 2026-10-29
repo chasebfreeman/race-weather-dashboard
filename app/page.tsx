@@ -39,7 +39,7 @@ const WEATHER_FIELDS = {
   absPressureInHg: { label: "Absolute pressure (inHg)", decimals: 3 },
   correction: { label: "Correction factor", decimals: 4 },
   densityAltFt: { label: "Density altitude (ft)", decimals: 0 },
-  adr: { label: "ADR (%)", decimals: 1 },
+  adr: { label: "ADR (%)", decimals: 2 },
   humidityGrains: { label: "Humidity grains", decimals: 1 },
   vaporPressureInHg: { label: "Vapor pressure (inHg)", decimals: 4 },
   adr2: { label: "ADR2 correction", decimals: 4 },
@@ -400,17 +400,17 @@ export default function Home() {
         }}
       >
         <Tile label="Temp (F)" value={data ? fmt(data.display.tempF, 1) : "—"} />
-        <Tile label="Correction" value={data ? fmt(data.display.correction, 5) : "—"} />
+        <Tile label="Correction" value={data ? fmt(data.display.correction, 4) : "—"} />
         <Tile label="Vapor P (inHg)" value={data ? fmt(data.display.vaporPressureInHg, 4) : "—"} />          
         <Tile label="Dew Pt (F)" value={data ? fmt(data.display.dewPointF, 1) : "—"} />
         <Tile label="Timestamp" value={data ? formatTs12Hour(data.display.ts) : "—"} /> 
         <Tile label="Humidity (%)" value={data ? fmt(data.display.humidityPct, 1) : "—"} />
-        <Tile label="ADR" value={data ? fmt(data.display.adr, 1) : "—"} />
+        <Tile label="ADR" value={data ? fmt(data.display.adr, 2) : "—"} />
         <Tile label="Grains" value={data ? fmt(data.display.humidityGrains, 1) : "—"} />
         <Tile label="DA (ft)" value={data ? fmt(data.display.densityAltFt, 0) : "—"} />                
         <Tile label="UV Index" value={data ? fmt(data.display.uvIndex, 1) : "—"} />
         <Tile label="Abs Press (inHg)" value={data ? fmt(data.display.absPressureInHg, 3) : "—"} />
-        <Tile label="ADR2 Correction" value={data ? fmt(data.display.adr2, ) : "—"} />
+        <Tile label="ADR2 Correction" value={data ? fmt(data.display.adr2, 4) : "—"} />
 
       </section>
 
