@@ -2,6 +2,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import TrendChart from "./TrendChart";
+import {
+  HISTORY_WINDOW_MS,
+  fetchReadingsAfter,
+  type StoredReading,
+} from "@/lib/weatherHistory";
 
 type ApiResult = {
   inputs: {
@@ -76,30 +82,6 @@ function fmt(value: unknown, decimals?: number) {
 }
 
 /* =========================
-   History persistence
-========================= */
-const HISTORY_KEY = "racewx_history_v1";
-const HISTORY_MAX = 2000;
-
-function loadHistoryFromStorage(): ApiResult[] {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((x) => x?.display?.ts);
-  } catch {
-    return [];
-  }
-}
-
-function saveHistoryToStorage(history: ApiResult[]) {
-  try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  } catch {}
-}
-
-/* =========================
    Time helpers for staleness + display
 ========================= */
 function parseTsToMs(ts: string): number | null {
@@ -164,7 +146,10 @@ function downloadTextFile(filename: string, text: string) {
 
 export default function Home() {
   const [data, setData] = useState<ApiResult | null>(null);
-  const [history, setHistory] = useState<ApiResult[]>([]);
+  // Shared history: the last 24 hours of readings stored on the server, newest first.
+  const [history, setHistory] = useState<StoredReading[]>([]);
+  const historyRef = useRef<StoredReading[]>([]);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedReading, setSelectedReading] = useState<LoggedReading | null>(null);
 
@@ -172,12 +157,6 @@ export default function Home() {
   const liveReceiptRef = useRef<{ timestamp: string; atMs: number } | null>(null);
   const [liveAgeSec, setLiveAgeSec] = useState<number | null>(null);
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
-
-  /* hydrate history on load */
-  useEffect(() => {
-    const existing = loadHistoryFromStorage();
-    if (existing.length) setHistory(existing);
-  }, []);
 
   // tick every 1s so "age" updates live
   useEffect(() => {
@@ -212,21 +191,46 @@ export default function Home() {
         setLiveAgeSec(0);
       }
       setData(ok);
-
-      setHistory((prev) => {
-        if (prev[0]?.display?.ts === ok.display.ts) return prev;
-        const next = [ok, ...prev].slice(0, HISTORY_MAX);
-        saveHistoryToStorage(next);
-        return next;
-      });
     } catch (e: any) {
       setError(e?.message ?? "Failed to load live weather.");
     }
   }
 
+  // Pull readings the server has stored since we last looked (everything from the
+  // last 24 hours on first load), and drop anything that has aged out of the window.
+  async function refreshHistory() {
+    try {
+      const cutoffMs = Date.now() - HISTORY_WINDOW_MS;
+      const prev = historyRef.current;
+      const newestTs = prev[0]?.ts;
+      const after =
+        newestTs && Date.parse(newestTs) > cutoffMs
+          ? newestTs
+          : new Date(cutoffMs).toISOString();
+
+      const fresh = await fetchReadingsAfter(after);
+      setHistoryError(null);
+
+      const freshTs = new Set(fresh.map((r) => r.ts));
+      const next = [...fresh, ...prev.filter((r) => !freshTs.has(r.ts))].filter(
+        (r) => Date.parse(r.ts) >= cutoffMs
+      );
+
+      if (fresh.length === 0 && next.length === prev.length) return;
+      historyRef.current = next;
+      setHistory(next);
+    } catch (e: any) {
+      setHistoryError(e?.message ?? "Could not load the shared history.");
+    }
+  }
+
   useEffect(() => {
-    fetchLive();
-    const id = setInterval(fetchLive, 60_000);
+    const tick = () => {
+      fetchLive();
+      refreshHistory();
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -235,7 +239,7 @@ export default function Home() {
      COLUMN ORDER (LOCKED)
   ========================= */
   const columns = useMemo(() => {
-    const sample = data?.display ?? history[0]?.display;
+    const sample = data?.display ?? history[0];
     if (!sample) return [];
 
     const pinnedOrder: (keyof ApiResult["display"])[] = [
@@ -262,14 +266,14 @@ export default function Home() {
     }));
   }, [data, history]);
 
-  function openLoggedReading(reading: ApiResult) {
+  function openLoggedReading(reading: StoredReading) {
     setSelectedReading({
-      timestamp: reading.display.ts,
+      timestamp: reading.ts,
       fields: columns.map((column) => ({
         ...column,
         value: formatReadingValue(
           column.key,
-          reading.display[column.key as keyof ApiResult["display"]]
+          reading[column.key as keyof StoredReading]
         ),
       })),
     });
@@ -278,7 +282,7 @@ export default function Home() {
   /* =========================
      Stale indicator
   ========================= */
-  const lastTs = data?.display?.ts ?? history[0]?.display?.ts ?? null;
+  const lastTs = data?.display?.ts ?? history[0]?.ts ?? null;
   const lastMs = lastTs ? parseTsToMs(lastTs) : null;
   const ageSec = liveAgeSec ?? (lastMs ? (nowMs - lastMs) / 1000 : Infinity);
 
@@ -319,7 +323,7 @@ export default function Home() {
     const todayYMD = toYMDLocal(new Date());
 
     const todays = history.filter((r) => {
-      const ms = Date.parse(r.display.ts);
+      const ms = Date.parse(r.ts);
       if (!Number.isFinite(ms)) return false;
       return toYMDLocal(new Date(ms)) === todayYMD;
     });
@@ -332,7 +336,7 @@ export default function Home() {
     const keys = columns.map((c) => c.key);
     const header = keys.map(csvEscape).join(",");
     const lines = todays.map((r) =>
-      keys.map((k) => csvEscape((r.display as any)[k])).join(",")
+      keys.map((k) => csvEscape((r as any)[k])).join(",")
     );
 
     const csv = [header, ...lines].join("\n");
@@ -414,6 +418,9 @@ export default function Home() {
 
       </section>
 
+      {/* ---- Trend graph (new point every 5 minutes) ---- */}
+      <TrendChart readings={history} />
+
       {/* ---- History table ---- */}
       <section style={{ marginTop: 20 }}>
         <div
@@ -429,7 +436,7 @@ export default function Home() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ opacity: 0.7, fontSize: 13 }}>
-              {history.length} stored
+              Last 24 hours · {history.length} readings
             </div>
 
             <button
@@ -446,26 +453,25 @@ export default function Home() {
             >
               Export Today CSV
             </button>
-
-            <button
-              onClick={() => {
-                setHistory([]);
-                localStorage.removeItem(HISTORY_KEY);
-              }}
-              style={{
-                border: "1px solid var(--table-header-border)",
-                borderRadius: 8,
-                padding: "6px 10px",
-                background: "var(--table-header-background)",
-                color: "var(--table-header-foreground)",
-                cursor: "pointer",
-                fontSize: 13,
-              }}
-            >
-              Clear history
-            </button>
           </div>
         </div>
+
+        {historyError && (
+          <div
+            role="status"
+            style={{
+              marginTop: 10,
+              background: "#fef9c3",
+              border: "1px solid #eab308",
+              color: "#854d0e",
+              padding: "8px 12px",
+              borderRadius: 8,
+              fontSize: 13,
+            }}
+          >
+            {historyError} Live values above are unaffected; retrying every minute.
+          </div>
+        )}
 
         <div
           style={{
@@ -520,12 +526,12 @@ export default function Home() {
               ) : (
                 history.map((r) => (
                   <tr
-                    key={r.display.ts}
+                    key={r.ts}
                     style={{ borderBottom: "1px solid #f3f4f6" }}
                   >
                     {columns.map((c) => {
-                      const key = c.key as keyof ApiResult["display"];
-                      const value = r.display?.[key];
+                      const key = c.key as keyof StoredReading;
+                      const value = r[key];
 
                       const out = formatReadingValue(c.key, value);
 

@@ -146,3 +146,135 @@ body {
     padding: 16px;
   }
 }
+
+/* ---- Trend graph ---- */
+:root {
+  --trend-line: #2a78d6;
+  --trend-grid: #e5e7eb;
+  --trend-muted: #6b7280;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --trend-line: #3987e5;
+    --trend-grid: #2a2f37;
+    --trend-muted: #9ca3af;
+  }
+}
+
+.trend {
+  margin-top: 20px;
+  padding: 12px;
+  border: 1px solid var(--trend-grid);
+  border-radius: 12px;
+}
+
+.trend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.trend-head h2 {
+  margin: 0;
+}
+
+.trend-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.trend-readout {
+  font-size: 13px;
+  color: var(--trend-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-ranges {
+  display: flex;
+  gap: 4px;
+}
+
+.trend-range {
+  min-width: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--table-header-border);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.trend-range[aria-pressed="true"] {
+  background: var(--table-header-background);
+  color: var(--table-header-foreground);
+  font-weight: 700;
+}
+
+.trend-range:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.trend-body {
+  width: 100%;
+  min-width: 0;
+}
+
+.trend-label {
+  font-size: 12px;
+  fill: var(--trend-muted);
+}
+
+.trend-value {
+  font-size: 16px;
+  font-weight: 650;
+  fill: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-tick {
+  font-size: 11px;
+  fill: var(--trend-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-grid {
+  stroke: var(--trend-grid);
+  stroke-width: 1;
+}
+
+.trend-line {
+  fill: none;
+  stroke: var(--trend-line);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.trend-dot {
+  fill: var(--trend-line);
+}
+
+.trend-marker {
+  fill: var(--trend-line);
+  stroke: var(--background);
+  stroke-width: 2;
+}
+
+.trend-crosshair {
+  stroke: var(--trend-muted);
+  stroke-width: 1;
+}
+
+.trend-note {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--trend-muted);
+}
