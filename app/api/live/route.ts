@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { computeRacingWeather } from "@/lib/weatherCalc";
 
-const BAROMETER_OFFSET_INHG = -0.0;
+const BAROMETER_OFFSET_INHG = -0.02;
 const HUMIDITY_OFFSET_PCT = -0.0;
 
 // WeatherLink v2 current endpoint:
